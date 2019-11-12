@@ -71,12 +71,14 @@ const CourtesySentenceHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent' 
             || Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' 
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'ThanksIntent');
+            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'ThanksIntent'
+            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent');
     },
     handle(handlerInput) {
         const speakOutput = Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent' ? 'Ciao da Mangapedia!' : (
-             Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' ? 'Io sto benissimo, grazie!' : 
-             'È un piacere aiutarti!'); // thanks
+             Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' ? 'Io sto benissimo, grazie!' : (
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent' ? 'Oops, ti posso suggerire soltanto manga, non anime. Gomenasai.' : 
+                 'È un piacere aiutarti!')); // thanks
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -91,8 +93,16 @@ const MangaRecommendationHandler = {
             || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent');
     },
     handle(handlerInput) {
-        const randomIndex = Math.floor(Math.random() * mangaList.length);
-        lastMangaRecommended = mangaList[randomIndex];
+        let list = mangaList;
+        if(Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent' ) {
+            const filter = Alexa.getSlotValue(handlerInput.requestEnvelope, 'genre');
+            if(filter) {
+                list = list.filter(el => el.c.find(category => category.toLowerCase() === filter.toLowerCase()));
+            }
+        }
+
+        const randomIndex = Math.floor(Math.random() * list.length);
+        lastMangaRecommended = list[randomIndex];
         const speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${lastMangaRecommended.c.join(', ')}.`;
         return handlerInput.responseBuilder
             .speak(speakOutput)
