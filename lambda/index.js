@@ -6,13 +6,15 @@ const Service = require('./service.js');
 
 let mangaList = [];
 let lastMangaRecommended;
+let waitingForDescriptionConfirm = false;
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     async handle(handlerInput) {
-        let speakOutput = 'Benvenuto! Puoi chiedermi di suggerirti un manga casuale, per genere, oppure chiedermi informazioni su uno specifico manga.';
+        let speakOutput = 'Benvenuto! Puoi chiedermi di suggerirti un manga casuale, oppure di uno specifico genere.';
+        waitingForDescriptionConfirm = false;
         try {
             mangaList = await Service.getMangaList();
         } catch(err) {
@@ -33,7 +35,7 @@ const HelpIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
-        const speakOutput = 'Come posso aiutarti? Puoi chiedermi di suggerirti un manga casuale, per genere, oppure chiedermi informazioni su uno specifico manga.';
+        const speakOutput = 'Come posso aiutarti? Puoi chiedermi di suggerirti un manga casuale, oppure di uno specifico genere.';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -94,16 +96,65 @@ const MangaRecommendationHandler = {
     },
     handle(handlerInput) {
         let list = mangaList;
+        let speakOutput = '';
+        
         if(Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent' ) {
-            const filter = Alexa.getSlotValue(handlerInput.requestEnvelope, 'genre');
+            const slot = Alexa.getSlot(handlerInput.requestEnvelope, 'genre');
+            const filter = slot && slot.resolutions && slot.resolutions.resolutionsPerAuthority && slot.resolutions.resolutionsPerAuthority[0] && 
+            slot.resolutions.resolutionsPerAuthority[0].values && slot.resolutions.resolutionsPerAuthority[0].values[0] && 
+            slot.resolutions.resolutionsPerAuthority[0].values[0].value && slot.resolutions.resolutionsPerAuthority[0].values[0].value.name;
             if(filter) {
                 list = list.filter(el => el.c.find(category => category.toLowerCase() === filter.toLowerCase()));
+            } else {
+                list = [];
             }
         }
 
-        const randomIndex = Math.floor(Math.random() * list.length);
-        lastMangaRecommended = list[randomIndex];
-        const speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${lastMangaRecommended.c.join(', ')}.`;
+        
+        if(list.length > 0) {
+            const randomIndex = Math.floor(Math.random() * list.length);
+            lastMangaRecommended = list[randomIndex];
+            waitingForDescriptionConfirm = true;
+            speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${lastMangaRecommended.c.join(', ')}. ` +
+            'Vuoi che ti legga la trama?';
+        } else {
+            speakOutput = 'Non ho trovato nessun manga per il genere specificato, mi spiace.'
+        }
+      
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+}
+
+const ConfirmDenyIntentHandler = { 
+      canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent' 
+            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'DenyIntent');
+    },
+    async handle(handlerInput) {
+        let speakOutput = '';
+        if(waitingForDescriptionConfirm) {
+            if(Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent') {
+                try {
+                    const mangaId = lastMangaRecommended.i;
+                    const info = await Service.getMangaInfo(mangaId);
+                    const {title, description} = info;
+                    waitingForDescriptionConfirm = false;
+                    speakOutput = `Ecco la trama di ${title}: "${description}"`;
+                } catch(err) {
+                    console.error(err);
+                    speakOutput = 'Qualcosa è andato storto... puoi ripetere?';
+                }
+            } else { // deny intent
+                speakOutput = 'Ok, fa niente allora.'
+            }
+        } else {
+            speakOutput = 'Scusa, non ho capito';
+        }
+        
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -159,6 +210,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         SessionEndedRequestHandler,
         CourtesySentenceHandler,
         MangaRecommendationHandler,
+        ConfirmDenyIntentHandler,
         IntentReflectorHandler, // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
     )
     .addErrorHandlers(
