@@ -17,11 +17,11 @@ const LaunchRequestHandler = {
         waitingForDescriptionConfirm = false;
         try {
             mangaList = await Service.getMangaList();
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             speakOutput = 'Benvenuto! Scusa ma non mi sento molto bene oggi. Puoi tornare più tardi?'
         }
-      
+
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -68,19 +68,19 @@ const SessionEndedRequestHandler = {
 };
 
 // Custom intents
-const CourtesySentenceHandler = { 
-      canHandle(handlerInput) {
+const CourtesySentenceHandler = {
+    canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent' 
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' 
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'ThanksIntent'
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent');
+            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'ThanksIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent');
     },
     handle(handlerInput) {
         const speakOutput = Alexa.getIntentName(handlerInput.requestEnvelope) === 'HelloIntent' ? 'Ciao da Scopri Manga!' : (
-             Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' ? 'Io sto benissimo, grazie!' : (
-            Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent' ? 'Oops, ti posso suggerire soltanto manga, non anime. Gomenasai.' : 
-                 'È un piacere aiutarti!')); // thanks
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'HowAreYouIntent' ? 'Io sto benissimo, grazie!' : (
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomAnimeIntent' ? 'Oops, ti posso suggerire soltanto manga, non anime. Gomenasai.' :
+                    'È un piacere aiutarti!')); // thanks
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -88,95 +88,104 @@ const CourtesySentenceHandler = {
     }
 }
 
-const MangaRecommendationHandler = { 
-      canHandle(handlerInput) {
+const MangaRecommendationHandler = {
+    canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaIntent' 
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent');
+            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent');
     },
     handle(handlerInput) {
         let list = mangaList;
         let speakOutput = '';
-        
-        if(Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent' ) {
+
+        if (Alexa.getIntentName(handlerInput.requestEnvelope) === 'RandomMangaWithFilterIntent') {
             const slot = Alexa.getSlot(handlerInput.requestEnvelope, 'genre');
-            const filter = slot && slot.resolutions && slot.resolutions.resolutionsPerAuthority && slot.resolutions.resolutionsPerAuthority[0] && 
-            slot.resolutions.resolutionsPerAuthority[0].values && slot.resolutions.resolutionsPerAuthority[0].values[0] && 
-            slot.resolutions.resolutionsPerAuthority[0].values[0].value && slot.resolutions.resolutionsPerAuthority[0].values[0].value.name;
-            if(filter) {
+            const filter = slot && slot.resolutions && slot.resolutions.resolutionsPerAuthority && slot.resolutions.resolutionsPerAuthority[0] &&
+                slot.resolutions.resolutionsPerAuthority[0].values && slot.resolutions.resolutionsPerAuthority[0].values[0] &&
+                slot.resolutions.resolutionsPerAuthority[0].values[0].value && slot.resolutions.resolutionsPerAuthority[0].values[0].value.name;
+            if (filter) {
                 list = list.filter(el => el.c.find(category => category.toLowerCase() === filter.toLowerCase()));
             } else {
                 list = [];
             }
         }
 
-        
-        if(list.length > 0) {
+
+        if (list.length > 0) {
             const randomIndex = Math.floor(Math.random() * list.length);
             lastMangaRecommended = list[randomIndex];
             waitingForDescriptionConfirm = true;
             speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${lastMangaRecommended.c.join(', ')}. ` +
-            'Vuoi che ti legga la trama?';
-            
+                'Vuoi che ti legga la trama?';
+
             return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt(speakOutput)
-            .getResponse();
+                .speak(speakOutput)
+                .reprompt(speakOutput)
+                .getResponse();
         } else {
             speakOutput = 'Non ho trovato nessun manga per il genere specificato, mi spiace.'
             return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .getResponse();
+                .speak(speakOutput)
+                .getResponse();
         }
     }
 }
 
-const ConfirmDenyIntentHandler = { 
-      canHandle(handlerInput) {
+const ConfirmDenyIntentHandler = {
+    canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent' 
-            || Alexa.getIntentName(handlerInput.requestEnvelope) === 'DenyIntent');
+            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'DenyIntent');
     },
     async handle(handlerInput) {
         let speakOutput = '';
-        if(waitingForDescriptionConfirm) {
-            if(Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent') {
+        if (waitingForDescriptionConfirm) {
+            if (Alexa.getIntentName(handlerInput.requestEnvelope) === 'ConfirmIntent') {
                 try {
                     const mangaId = lastMangaRecommended.i;
                     const info = await Service.getMangaInfo(mangaId);
-                    const {title, description} = info;
+                    const { title, description } = info;
+
+                    let italianDescription = description;
+
+                    // check if translation is in the correct language
+                    const lang = await Service.getLanguage(description);
+                    if (lang !== 'it') {
+                        italianDescription = await Service.getItalianTranslation(description);
+                    }
+
                     waitingForDescriptionConfirm = false;
-                    speakOutput = `Ecco la trama di ${title}: "${description}"`;
-                    
+                    speakOutput = `Ecco la trama di ${title}: "${italianDescription}"`;
+
                     return handlerInput.responseBuilder
-                    .speak(speakOutput)
-                    .getResponse();
-                } catch(err) {
+                        .speak(speakOutput)
+                        .getResponse();
+                } catch (err) {
                     console.error(err);
                     speakOutput = 'Qualcosa è andato storto... puoi ripetere?';
-                    
+
                     return handlerInput.responseBuilder
-                    .speak(speakOutput)
-                    .reprompt(speakOutput)
-                    .getResponse();
+                        .speak(speakOutput)
+                        .reprompt(speakOutput)
+                        .getResponse();
                 }
             } else { // deny intent
                 speakOutput = 'Ok, fa niente allora.'
-                
+
                 return handlerInput.responseBuilder
                     .speak(speakOutput)
                     .getResponse();
             }
         } else {
             speakOutput = 'Scusa, non ho capito. Puoi ripetere?';
-            
+
             return handlerInput.responseBuilder
-                    .speak(speakOutput)
-                    .reprompt(speakOutput)
-                    .getResponse();
+                .speak(speakOutput)
+                .reprompt(speakOutput)
+                .getResponse();
         }
-        
-       
+
+
     }
 }
 
