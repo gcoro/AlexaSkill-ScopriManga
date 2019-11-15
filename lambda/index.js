@@ -115,7 +115,10 @@ const MangaRecommendationHandler = {
             const randomIndex = Math.floor(Math.random() * list.length);
             lastMangaRecommended = list[randomIndex];
             waitingForDescriptionConfirm = true;
-            speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${lastMangaRecommended.c.join(', ')}. ` +
+
+            const genres = lastMangaRecommended.c.map(el => Service.getTranslatedGenre(el));
+
+            speakOutput = `Ti suggerisco il manga: "${lastMangaRecommended.t}"! Il suo genere è: ${genres.join(', ')}. ` +
                 'Vuoi che ti legga la trama?';
 
             return handlerInput.responseBuilder
