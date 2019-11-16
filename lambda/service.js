@@ -1,5 +1,6 @@
 const axios = require('axios');
-const key = '';// personal API key
+const querystring = require('querystring');
+const key = ''; // private key
 
 const getMangaList = async () => {
     const response = await axios.get('https://www.mangaeden.com/api/list/1/');
@@ -12,12 +13,14 @@ const getMangaInfo = async (mangaId) => {
 }
 
 const getLanguage = async (text) => {
-    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/detect?key=${key}&text=${encodeURI(text)}`);
+    const response = await axios.post(`https://translate.yandex.net/api/v1.5/tr.json/detect`,
+        querystring.stringify({ text, key }));
     return response.data.lang;
 }
 
 const getItalianTranslation = async (text) => {
-    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/translate?key=${key}&text=${encodeURI(text)}&lang=it`);
+    const response = await axios.post(`https://translate.yandex.net/api/v1.5/tr.json/translate`,
+        querystring.stringify({ text, key, lang: 'it', format: 'html' }));
     return response.data.text[0];
 }
 
