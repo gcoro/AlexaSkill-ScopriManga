@@ -12,12 +12,12 @@ const getMangaInfo = async (mangaId) => {
 }
 
 const getLanguage = async (text) => {
-    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/detect?key=${key}&text=${text}`);
+    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/detect?key=${key}&text=${encodeURI(text)}`);
     return response.data.lang;
 }
 
 const getItalianTranslation = async (text) => {
-    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/translate?key=${key}&text=${text}&lang=it`);
+    const response = await axios.get(`https://translate.yandex.net/api/v1.5/tr.json/translate?key=${key}&text=${encodeURI(text)}&lang=it`);
     return response.data.text[0];
 }
 
