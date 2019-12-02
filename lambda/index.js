@@ -83,7 +83,6 @@ const CourtesySentenceHandler = {
                     'È un piacere aiutarti!')); // thanks
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt(speakOutput)
             .getResponse();
     }
 }
